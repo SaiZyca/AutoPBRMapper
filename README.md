@@ -1,7 +1,24 @@
+---
+
+title: Auto PBR Mapper Readme
+lang: zh-tw
+description: Auto PBR Mapper Readme
+tags: RD, Blender, Addon
+
+---
+
+
+
 # AutoPBRMapper
 Auto PBR Mapper
 
+
 ## Description
 
-> this Addon can auto assign maps by file's suffix name ,
-> Hope I can add more functions.
+> addon for blender 2.8 <br>
+auto assign material with suffix mamed texture maps.
+
+## Todolist
+
+- [x] gltf material template
+- [ ] multi folder check

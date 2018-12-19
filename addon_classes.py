@@ -224,36 +224,36 @@ class AutoPBRMapper_Preferences(bpy.types.AddonPreferences):
                         ("KEYMAPS", "Keymaps", ""),
                         ("ABOUT", "About", "")]
 
-    tabs: bpy.props.EnumProperty(name="Tabs", items=preferences_tabs, default="GENERAL")
+    # tabs: bpy.props.EnumProperty(name="Tabs", items=preferences_tabs, default="GENERAL")
 
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="Auto PBR Map Importer Settings")
+    # def draw(self, context):
+    #     layout = self.layout
+    #     layout.label(text="Auto PBR Map Importer Settings")
 
-        column = layout.column(align=True)
-        row = column.row()
-        row.prop(self, "tabs", expand=True)
+    #     column = layout.column(align=True)
+    #     row = column.row()
+    #     row.prop(self, "tabs", expand=True)
 
-        box = column.box()
-        split = box.split(factor = 0.75)
-        groupBox = split.box()
-        groupBox.label(text="Map FileName Setting")
+    #     box = column.box()
+    #     split = box.split(factor = 0.75)
+    #     groupBox = split.box()
+    #     groupBox.label(text="Map FileName Setting")
 
-        column = groupBox.column(align=True)
-        column.prop(self, "suffix_basecolor")
-        column.prop(self, "suffix_normal")
-        column.prop(self, "suffix_metallic")
-        column.prop(self, "suffix_roughnes")
-        column.prop(self, "suffix_specular")
-        column.prop(self, "suffix_opacity")
-        row = groupBox.row(align=True)
-        row.label(text="File Extension")
-        row.prop(self, "filename_ext", expand=True)
+    #     column = groupBox.column(align=True)
+    #     column.prop(self, "suffix_basecolor")
+    #     column.prop(self, "suffix_normal")
+    #     column.prop(self, "suffix_metallic")
+    #     column.prop(self, "suffix_roughnes")
+    #     column.prop(self, "suffix_specular")
+    #     column.prop(self, "suffix_opacity")
+    #     row = groupBox.row(align=True)
+    #     row.label(text="File Extension")
+    #     row.prop(self, "filename_ext", expand=True)
 
-        groupBox = split.box()
-        groupBox.label(text="Material Type")
-        column = groupBox.column(align=True)
-        column.prop(self, "materialtype", expand=True)
+    #     groupBox = split.box()
+    #     groupBox.label(text="Material Type")
+    #     column = groupBox.column(align=True)
+    #     column.prop(self, "materialtype", expand=True)
 
 class AutoPBRMapper_properties(bpy.types.PropertyGroup):
 
