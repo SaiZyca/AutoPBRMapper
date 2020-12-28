@@ -8,6 +8,39 @@ colorspace setting move to image node from shader node
 import bpy
 import os
 from bpy.types import Operator, AddonPreferences, Panel, PropertyGroup
+from bpy.props import StringProperty, BoolProperty, IntProperty, CollectionProperty, BoolVectorProperty, PointerProperty, EnumProperty
+
+
+def get_object_collections():
+    objects = None
+    value = bpy.context.scene.AutoPBRMapper_setting.rename_objects
+    if value == 'ALL':
+        objects = bpy.context.scene.objects
+    elif value == 'SELECTION':
+        objects = bpy.context.selected_objects
+    
+    return objects
+
+def find_replace(string_find, string_replace):
+    objects = get_object_collections()
+    new_name = old_name.replace(string_find, string_replace)
+
+def data_rename(name_target,name_from):
+    objects = bpy.data.objects
+    
+    for obj in objects:
+        data_dict = {}
+        data_dict['OBJECT'] = obj
+        data_dict['DATA'] = obj.data
+        data_dict['MATERIAL'] = None
+
+        if len(obj.material_slots) > 0:
+            if obj.material_slots[0].material:
+                data_dict['MATERIAL'] = obj.material_slots[0].material
+
+        if data_dict[name_from] and data_dict[name_target] is not None:
+            data_dict[name_from].name = data_dict[name_target].name
+
 
 def get_preferences():
     name = get_addon_name()
@@ -19,7 +52,7 @@ def get_addon_name():
 def assignMaterial():
     os.system('cls')
 
-# inital setting
+
     tex_folder = bpy.context.scene.AutoPBRMapper_setting.filepath
     ext = bpy.context.scene.AutoPBRMapper_setting.filename_ext
 
@@ -321,6 +354,57 @@ class AutoPBRMapper_properties(bpy.types.PropertyGroup):
         ],
         name = 'Assign Type'
     )
+    objects_collection : bpy.props.EnumProperty(
+        items = [
+            ('ALL','All','All Objects'),
+            ('SELECTION','Selection','Selecton only'),  
+        ],
+        default='ALL',
+        name = 'OBJECT'
+    )
+    rename_type : bpy.props.EnumProperty(
+        items = [
+            ('COPY','Copy From','Copy From'),
+            ('REPLACE','Find Replace','Find / Replace'),  
+        ],
+        default='COPY',
+        name = ''
+    )
+    name_target: EnumProperty(
+    name="",
+    description="get name from data",
+    items=[("OBJECT", "Object", "Object Name"),
+            ("DATA", "Data", "Data Name"),
+            ("MATERIAL", "Material", "Material Name"),
+            ],
+    default='MATERIAL',
+    )
+    name_from: EnumProperty(
+    name="",
+    description="get name from data",
+    items=[("OBJECT", "Object", "Object Name"),
+            ("DATA", "Data", "Data Name"),
+            ("MATERIAL", "Material", "Material Name"),
+            ],
+    default='OBJECT',
+    )
+    string_from: EnumProperty(
+    name="",
+    description="get name from data",
+    items=[("OBJECT", "Object", "Object Name"),
+            ("DATA", "Data", "Data Name"),
+            ("MATERIAL", "Material", "Material Name"),
+            ],
+    default='OBJECT',
+    )
+    string_find: bpy.props.StringProperty(
+        default = "",
+        name = "",
+    )
+    string_replace: bpy.props.StringProperty(
+        default = "",
+        name = "",
+    )
 
 class AutoPBRMapper_Actions(bpy.types.Operator):
     """ Actions """
@@ -337,7 +421,17 @@ class AutoPBRMapper_Actions(bpy.types.Operator):
             ## ObjectOperator
             if button=="AssignMaterial": 
                 assignMaterial()
-        
+
+            elif button == 'Apply Name':
+                name_target = context.scene.AutoPBRMapper_setting.name_target
+                name_from = context.scene.AutoPBRMapper_setting.name_from
+                data_rename(name_target, name_from)
+
+            elif button == 'Find Replace':
+                string_from = context.scene.AutoPBRMapper_setting.string_from
+                string_replace = context.scene.AutoPBRMapper_setting.string_replace
+                find_replace(string_from, string_replace)
+
             else:
                 print ('Not defined !')
         except Exception as e:
@@ -345,17 +439,23 @@ class AutoPBRMapper_Actions(bpy.types.Operator):
         
         return {"FINISHED"}
 
-class AutoPBRMapper_Panel(bpy.types.Panel):
+class AutoPBRMapper_PT_Panel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
-    bl_idname = "AutoPBRMapper_PT_setup"
     bl_region_type = "UI"
     bl_category = "AutoPBRMapper"
     bl_label = "AutoPBRMapper"
     # bl_options = {"DEFAULT_CLOSED"}   
-
-    
     def draw(self,context):
+        pass
 
+class AutoPBRMapper_PT_assigner(bpy.types.Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "AutoPBRMapper"
+    bl_label = "Assign PBR Materual"
+    bl_parent_id = "AutoPBRMapper_PT_Panel"
+    # bl_options = {"DEFAULT_CLOSED"}   
+    def draw(self,context):
         layout = self.layout
         row = layout.row(align = True)
         #layout.label('Mesh Tools')
@@ -380,3 +480,38 @@ class AutoPBRMapper_Panel(bpy.types.Panel):
         row.prop(bpy.context.scene.AutoPBRMapper_setting , "assigntype", expand=True)  
         row = layout.row(align = True) 
         row.operator('autopbrmapper.actions',text = 'Assign Materials').button = 'AssignMaterial'
+class AutoPBRMapper_PT_renamer(bpy.types.Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "AutoPBRMapper"
+    bl_label = "Quick Renamer"
+    bl_parent_id = "AutoPBRMapper_PT_Panel"
+    # bl_options = {"DEFAULT_CLOSED"}   
+    
+    def draw(self,context):
+        layout = self.layout
+        row = layout.row(align = False)
+        row.prop(context.scene.AutoPBRMapper_setting , "objects_collection", expand=True) 
+        row = layout.row(align = False)
+        row.label(text='Target Name')
+        row = layout.row(align = True)
+        row.prop(context.scene.AutoPBRMapper_setting , "name_target", expand=False) 
+        row.prop(context.scene.AutoPBRMapper_setting , "rename_type", expand=False) 
+        if context.scene.AutoPBRMapper_setting.rename_type == 'COPY':
+            row = layout.row(align = False)
+             
+            row.prop(context.scene.AutoPBRMapper_setting , "name_from", expand=False)
+            row = layout.row(align = False)
+            row.operator('autopbrmapper.actions',text = 'Apply Name').button = 'Apply Name'
+        elif context.scene.AutoPBRMapper_setting.rename_type == 'REPLACE':
+            row = layout.row(align = False)
+            row.label(text='Find')
+            row.label(text='Replace to')
+            row = layout.row(align = False)
+            row.prop(context.scene.AutoPBRMapper_setting , "string_find")
+            row.prop(context.scene.AutoPBRMapper_setting , "string_replace")
+            row = layout.row(align = True)
+
+            row.prop(context.scene.AutoPBRMapper_setting , "string_from", expand=False)
+            row = layout.row(align = False)
+            row.operator('autopbrmapper.actions',text = 'Find / Replace:').button = 'Find Replace'

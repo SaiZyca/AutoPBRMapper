@@ -38,7 +38,9 @@ classes = (
     addon_classes.AutoPBRMapper_Preferences,
     addon_classes.AutoPBRMapper_properties,
     addon_classes.AutoPBRMapper_Actions,
-    addon_classes.AutoPBRMapper_Panel
+    addon_classes.AutoPBRMapper_PT_Panel,
+    addon_classes.AutoPBRMapper_PT_assigner,
+    addon_classes.AutoPBRMapper_PT_renamer
 )
 
 # Registration
