@@ -7,13 +7,14 @@ colorspace setting move to image node from shader node
 
 import bpy
 import os
+import re
 from bpy.types import Operator, AddonPreferences, Panel, PropertyGroup
 from bpy.props import StringProperty, BoolProperty, IntProperty, CollectionProperty, BoolVectorProperty, PointerProperty, EnumProperty
 
 
-def get_object_collections():
+def get_objects():
     objects = None
-    value = bpy.context.scene.AutoPBRMapper_setting.rename_objects
+    value = bpy.context.scene.AutoPBRMapper_setting.objects_collection
     if value == 'ALL':
         objects = bpy.context.scene.objects
     elif value == 'SELECTION':
@@ -21,25 +22,46 @@ def get_object_collections():
     
     return objects
 
-def find_replace(string_find, string_replace):
-    objects = get_object_collections()
-    new_name = old_name.replace(string_find, string_replace)
+def get_name_dict(obj):
+    data_dict = {}
+    data_dict['OBJECT'] = obj
+    data_dict['DATA'] = obj.data
+    data_dict['MATERIAL'] = None
 
-def data_rename(name_target,name_from):
-    objects = bpy.data.objects
+    if len(obj.material_slots) > 0:
+        if obj.material_slots[0].material:
+            data_dict['MATERIAL'] = obj.material_slots[0].material
+
+    return data_dict
+
+def find_replace():
+    objects = get_objects()
+    name_target = bpy.context.scene.AutoPBRMapper_setting.name_target
+    string_find = bpy.context.scene.AutoPBRMapper_setting.string_find
+    string_replace = bpy.context.scene.AutoPBRMapper_setting.string_replace
+    case_sensitive = bpy.context.scene.AutoPBRMapper_setting.case_sensitive
+
+    for obj in objects:
+        data_dict = get_name_dict(obj)
+        if case_sensitive:
+            new_name = data_dict[name_target].name.replace(string_find, string_replace)
+            data_dict[name_target].name = new_name
+        else:
+            new_name = re.compile(re.escape(string_find), re.IGNORECASE)
+            new_name = new_name.sub(string_replace, data_dict[name_target].name)
+            # print (new_name)
+            data_dict[name_target].name = new_name
+
+def data_rename():
+    objects = get_objects()
+    name_target = bpy.context.scene.AutoPBRMapper_setting.name_target
+    name_from = bpy.context.scene.AutoPBRMapper_setting.name_from
     
     for obj in objects:
-        data_dict = {}
-        data_dict['OBJECT'] = obj
-        data_dict['DATA'] = obj.data
-        data_dict['MATERIAL'] = None
-
-        if len(obj.material_slots) > 0:
-            if obj.material_slots[0].material:
-                data_dict['MATERIAL'] = obj.material_slots[0].material
-
+        data_dict = get_name_dict(obj)
+        print (data_dict)
         if data_dict[name_from] and data_dict[name_target] is not None:
-            data_dict[name_from].name = data_dict[name_target].name
+            data_dict[name_target].name = data_dict[name_from].name
 
 
 def get_preferences():
@@ -388,15 +410,6 @@ class AutoPBRMapper_properties(bpy.types.PropertyGroup):
             ],
     default='OBJECT',
     )
-    string_from: EnumProperty(
-    name="",
-    description="get name from data",
-    items=[("OBJECT", "Object", "Object Name"),
-            ("DATA", "Data", "Data Name"),
-            ("MATERIAL", "Material", "Material Name"),
-            ],
-    default='OBJECT',
-    )
     string_find: bpy.props.StringProperty(
         default = "",
         name = "",
@@ -405,11 +418,16 @@ class AutoPBRMapper_properties(bpy.types.PropertyGroup):
         default = "",
         name = "",
     )
+    case_sensitive : BoolProperty(
+        name="Case Sensitive",
+        description="Case Sensitive",
+        default = True) 
 
 class AutoPBRMapper_Actions(bpy.types.Operator):
     """ Actions """
     bl_label ="AutoPBRMapper Operator"
     bl_idname = "autopbrmapper.actions"
+    bl_options = {"REGISTER", "UNDO"}
 
     button : bpy.props.StringProperty(default="")
     texturepath : bpy.props.StringProperty(default="")
@@ -423,14 +441,10 @@ class AutoPBRMapper_Actions(bpy.types.Operator):
                 assignMaterial()
 
             elif button == 'Apply Name':
-                name_target = context.scene.AutoPBRMapper_setting.name_target
-                name_from = context.scene.AutoPBRMapper_setting.name_from
-                data_rename(name_target, name_from)
+                data_rename()
 
             elif button == 'Find Replace':
-                string_from = context.scene.AutoPBRMapper_setting.string_from
-                string_replace = context.scene.AutoPBRMapper_setting.string_replace
-                find_replace(string_from, string_replace)
+                find_replace()
 
             else:
                 print ('Not defined !')
@@ -492,14 +506,14 @@ class AutoPBRMapper_PT_renamer(bpy.types.Panel):
         layout = self.layout
         row = layout.row(align = False)
         row.prop(context.scene.AutoPBRMapper_setting , "objects_collection", expand=True) 
-        row = layout.row(align = False)
-        row.label(text='Target Name')
         row = layout.row(align = True)
+        row.label(text='Target Name')
         row.prop(context.scene.AutoPBRMapper_setting , "name_target", expand=False) 
+        row = layout.row(align = True)
+        row.label(text='Rename Type')
         row.prop(context.scene.AutoPBRMapper_setting , "rename_type", expand=False) 
         if context.scene.AutoPBRMapper_setting.rename_type == 'COPY':
             row = layout.row(align = False)
-             
             row.prop(context.scene.AutoPBRMapper_setting , "name_from", expand=False)
             row = layout.row(align = False)
             row.operator('autopbrmapper.actions',text = 'Apply Name').button = 'Apply Name'
@@ -510,8 +524,7 @@ class AutoPBRMapper_PT_renamer(bpy.types.Panel):
             row = layout.row(align = False)
             row.prop(context.scene.AutoPBRMapper_setting , "string_find")
             row.prop(context.scene.AutoPBRMapper_setting , "string_replace")
-            row = layout.row(align = True)
-
-            row.prop(context.scene.AutoPBRMapper_setting , "string_from", expand=False)
+            row = layout.row(align = False)
+            row.prop(context.scene.AutoPBRMapper_setting , "case_sensitive")
             row = layout.row(align = False)
             row.operator('autopbrmapper.actions',text = 'Find / Replace:').button = 'Find Replace'
