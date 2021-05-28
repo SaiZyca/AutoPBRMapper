@@ -120,6 +120,7 @@ def assignMaterial():
 
             mix = mat_nodes.new("ShaderNodeMixShader")
             mix.location = (-1 * (mix.width + marggin), 150)
+            mix.inputs[0].default_value = 1
 
             transparent = mat_nodes.new("ShaderNodeBsdfTransparent")
             transparent.location = (-1 * 2 *(transparent.width + marggin), 150)
