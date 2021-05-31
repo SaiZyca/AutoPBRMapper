@@ -77,6 +77,7 @@ def assignMaterial():
 
     tex_folder = bpy.context.scene.AutoPBRMapper_setting.filepath
     ext = bpy.context.scene.AutoPBRMapper_setting.filename_ext
+    prefix = bpy.context.scene.AutoPBRMapper_setting.prefix
 
     mBaseColor = bpy.context.scene.AutoPBRMapper_setting.suffix_basecolor
     mMetallic = bpy.context.scene.AutoPBRMapper_setting.suffix_metallic
@@ -105,7 +106,7 @@ def assignMaterial():
 
     for material in materials:
         main_name = material.name
-        tempPathA = (tex_folder + '\\' + main_name + mBaseColor + ext)
+        tempPathA = (tex_folder + '\\' + prefix + main_name + mBaseColor + ext)
 
         if material.use_nodes is not True:
             material.use_nodes = True
@@ -131,20 +132,20 @@ def assignMaterial():
 
             tex_base_color = mat_nodes.new("ShaderNodeTexImage")
             try:
-                tex_base_color.image = bpy.data.images.load(os.path.join(tex_folder, (main_name + mBaseColor + ext)), check_existing=True)
+                tex_base_color.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mBaseColor + ext)), check_existing=True)
                 tex_base_color.image.colorspace_settings.name = 'sRGB'
             except RuntimeError as e:
-                print(main_name + " has no baseColor map.\n" + str(e))
+                print(prefix + main_name + " has no baseColor map.\n" + str(e))
             tex_base_color.hide = True
             tex_base_color.location = (-1 * 3 * (tex_base_color.width + marggin), 0)
 
 
             tex_metallic = mat_nodes.new("ShaderNodeTexImage")
             try:
-                tex_metallic.image = bpy.data.images.load(os.path.join(tex_folder, (main_name + mMetallic + ext)), check_existing=True)
+                tex_metallic.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mMetallic + ext)), check_existing=True)
                 tex_metallic.image.colorspace_settings.name = 'Linear'
             except RuntimeError as e:
-                print(main_name + " has no metallic map.\n" + str(e))
+                print(prefix + main_name + " has no metallic map.\n" + str(e))
             # tex_metallic.color_space="NONE"
             tex_metallic.hide = True
             tex_metallic.location = (-1 * 4 * (tex_metallic.width + marggin), 0)
@@ -152,10 +153,10 @@ def assignMaterial():
 
             tex_specular = mat_nodes.new("ShaderNodeTexImage")
             try:
-                tex_specular.image = bpy.data.images.load(os.path.join(tex_folder, (main_name + mSpecular + ext)), check_existing=True)
+                tex_specular.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mSpecular + ext)), check_existing=True)
                 tex_specular.image.colorspace_settings.name = 'Linear'
             except RuntimeError as e:
-                print(main_name + " has no specular map.\n" + str(e))
+                print(prefix + main_name + " has no specular map.\n" + str(e))
             # tex_specular.color_space = "NONE"
             tex_specular.hide = True
             tex_specular.location = (-1 * 5 * (tex_specular.width + marggin), 0)
@@ -163,10 +164,10 @@ def assignMaterial():
 
             tex_roughness = mat_nodes.new("ShaderNodeTexImage")
             try:
-                tex_roughness.image = bpy.data.images.load(os.path.join(tex_folder, (main_name + mRoughness + ext)), check_existing=True)
+                tex_roughness.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mRoughness + ext)), check_existing=True)
                 tex_roughness.image.colorspace_settings.name = 'Linear'
             except RuntimeError as e:
-                print(main_name + " has no roughness map.\n" + str(e))
+                print(prefix + main_name + " has no roughness map.\n" + str(e))
             # tex_roughness.color_space="NONE"
             tex_roughness.hide = True
             tex_roughness.location = (-1 * 6 * (tex_roughness.width + marggin), 0)
@@ -175,11 +176,11 @@ def assignMaterial():
             opcity_exist = True
             tex_opacity = mat_nodes.new("ShaderNodeTexImage")
             try:
-                tex_opacity.image = bpy.data.images.load(os.path.join(tex_folder, (main_name + mOpacity + ext)), check_existing=True)
+                tex_opacity.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mOpacity + ext)), check_existing=True)
                 tex_opacity.image.colorspace_settings.name = 'Linear'
             except RuntimeError as e:
                 opcity_exist = False
-                print(main_name + " has no opacity map.\n" + str(e))
+                print(prefix + main_name + " has no opacity map.\n" + str(e))
             # tex_opacity.color_space = "NONE"
             tex_opacity.hide = True
             tex_opacity.location = (-1 * 2 * (tex_opacity.width + marggin), 300)
@@ -187,10 +188,10 @@ def assignMaterial():
 
             tex_normal = mat_nodes.new("ShaderNodeTexImage")
             try:
-                tex_normal.image = bpy.data.images.load(os.path.join(tex_folder, (main_name + mNormal + ext)), check_existing=True)
+                tex_normal.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mNormal + ext)), check_existing=True)
                 tex_normal.image.colorspace_settings.name = 'Non-Color'
             except RuntimeError as e:
-                print(main_name + " has no normal map.\n" + str(e))
+                print(prefix + main_name + " has no normal map.\n" + str(e))
             # tex_normal.color_space = "NONE"
             tex_normal.hide = True
             tex_normal.location = (-1 * 6.5 * (tex_normal.width + marggin), -400)
@@ -236,16 +237,19 @@ def assignMaterial():
                 mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
                 mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
                 mat_links.new(tex_normal.outputs["Color"], normal_map.inputs["Color"])
-                
-
-
-
+        
+        else:
+            print ("%s not exist" % (tempPathA))
             # print
             # print ( 'Material:{0} -- auto PBR assigned Success '.format(main_name) )
 
 class AutoPBRMapper_Preferences(bpy.types.AddonPreferences):
     bl_idname = get_addon_name()
 
+    prefix : bpy.props.StringProperty(
+        default = "",
+        name = "Prefix",
+    )
     suffix_basecolor: bpy.props.StringProperty(
         default="_BaseColor",
         name="BaseColor Suffix",
@@ -328,6 +332,10 @@ class AutoPBRMapper_properties(bpy.types.PropertyGroup):
         default = "c:\\temp\\",
         subtype="FILE_PATH",
         name = "Texture Folder"
+    )
+    prefix : bpy.props.StringProperty(
+        default = "",
+        name = "Prefix",
     )
     suffix_basecolor : bpy.props.StringProperty(
         default = "_BaseColor",
@@ -475,6 +483,8 @@ class AutoPBRMapper_PT_assigner(bpy.types.Panel):
         row = layout.row(align = True)
         #layout.label('Mesh Tools')
         row.prop(bpy.context.scene.AutoPBRMapper_setting , "filepath")
+        row = layout.row(align = True)
+        row.prop(bpy.context.scene.AutoPBRMapper_setting , "prefix") 
         row = layout.row(align = True)
         row.prop(bpy.context.scene.AutoPBRMapper_setting , "suffix_basecolor")       
         row = layout.row(align = True)
