@@ -27,41 +27,28 @@ bl_info = {
     "category" : "Generic"
 }
 
+import os
 import bpy
-import importlib
-from . import addon_classes
 
-importlib.reload(addon_classes)
+from . import ui, actions, operators, properties
 
-
-classes = (
-    addon_classes.AutoPBRMapper_Preferences,
-    addon_classes.AutoPBRMapper_properties,
-    addon_classes.AutoPBRMapper_Actions,
-    addon_classes.AutoPBRMapper_PT_Panel,
-    addon_classes.AutoPBRMapper_PT_assigner,
-    addon_classes.AutoPBRMapper_PT_renamer
-)
-
-# Registration
+classes = ()
 
 def register():
-    from bpy.utils import register_class
-    for cls in classes:
-        register_class(cls)
+    properties.register()
+    operators.register()
+    ui.register()
 
-    bpy.types.Scene.AutoPBRMapper_setting = bpy.props.PointerProperty(type=addon_classes.AutoPBRMapper_properties)
-    print ("AutoPBRMapper coming")
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
 def unregister():
-    from bpy.utils import unregister_class
-    for cls in reversed(classes):
-        unregister_class(cls)
-
-    del bpy.types.Scene.AutoPBRMapper_setting
+    properties.unregister()
+    operators.unregister()
+    ui.unregister()
     
-    print ("AutoPBRMapper leaving")
-
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
 
 if __name__ == '__main__':
-    main()
+    register()
