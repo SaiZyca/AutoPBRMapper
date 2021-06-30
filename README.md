@@ -18,7 +18,18 @@ Auto PBR Mapper
 > addon for blender 2.8 <br>
 auto assign material with suffix mamed texture maps.
 
+
+## Update
+- 20210630
+  re assign material now more clearly to use .
+
+- 20210608:  
+  re-write struct and add re assign map for abc import.  
+  fix upper case alpha-numeric prefix error.  
+
+
 ## Todolist
 
 - [x] gltf material template
 - [ ] multi folder check
+

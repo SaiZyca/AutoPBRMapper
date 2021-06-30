@@ -1,4 +1,4 @@
-class AutoPBRMapper_Preferences(bpy.types.AddonPreferences):
+class AUTOPBR_preferences(bpy.types.AddonPreferences):
     bl_idname = get_addon_name()
 
     prefix : bpy.props.StringProperty(

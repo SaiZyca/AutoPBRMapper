@@ -1,7 +1,7 @@
 import bpy
 from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty, IntProperty
 
-class AutoPBRMapper_properties(bpy.types.PropertyGroup):
+class AUTOPBR_properties(bpy.types.PropertyGroup):
 
     filepath : StringProperty(
         default = "c:\\temp\\",
@@ -108,26 +108,31 @@ class AutoPBRMapper_properties(bpy.types.PropertyGroup):
         default = True
     ) 
     material_data_file : StringProperty(
-        default = "c:\\temp\\data.json",
+        default = "/temp/data.json",
         subtype="FILE_PATH",
-        name = ""
+        name = "mapping file"
     )
+    fuzzy_search : BoolProperty(
+        name="Fuzzy search",
+        description="Fuzzy Search",
+        default = True
+    ) 
 
 classes = (
-    AutoPBRMapper_properties,
+    AUTOPBR_properties,
 )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.AutoPBRMapper_setting = bpy.props.PointerProperty(type=AutoPBRMapper_properties)
+    bpy.types.Scene.AUTOPBR_properties = bpy.props.PointerProperty(type=AUTOPBR_properties)
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
 
-    del bpy.types.Scene.AutoPBRMapper_setting
+    del bpy.types.Scene.AUTOPBR_properties
 
 if __name__ == '__main__':
     register()

@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator, AddonPreferences, Panel, PropertyGroup
 from bpy.props import StringProperty, BoolProperty, IntProperty, CollectionProperty, BoolVectorProperty, PointerProperty, EnumProperty
 
-class AutoPBRMapper_PT_Panel(bpy.types.Panel):
+class AUTOPBR_PT_panel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "AutoPBRMapper"
@@ -11,98 +11,102 @@ class AutoPBRMapper_PT_Panel(bpy.types.Panel):
     def draw(self,context):
         pass
 
-class AutoPBRMapper_PT_assigner(bpy.types.Panel):
+class AUTOPBR_PT_assigner(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "AutoPBRMapper"
     bl_label = "Assign PBR Materual"
-    bl_parent_id = "AutoPBRMapper_PT_Panel"
+    bl_parent_id = "AUTOPBR_PT_panel"
     # bl_options = {"DEFAULT_CLOSED"}   
     def draw(self,context):
         layout = self.layout
         row = layout.row(align = True)
         #layout.label('Mesh Tools')
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "filepath")
+        row.prop(bpy.context.scene.AUTOPBR_properties , "filepath")
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "prefix") 
+        row.prop(bpy.context.scene.AUTOPBR_properties , "prefix") 
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "suffix_basecolor")       
+        row.prop(bpy.context.scene.AUTOPBR_properties , "suffix_basecolor")       
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "suffix_normal")
+        row.prop(bpy.context.scene.AUTOPBR_properties , "suffix_normal")
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "suffix_metallic")
+        row.prop(bpy.context.scene.AUTOPBR_properties , "suffix_metallic")
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "suffix_roughness")
+        row.prop(bpy.context.scene.AUTOPBR_properties , "suffix_roughness")
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "suffix_specular")
+        row.prop(bpy.context.scene.AUTOPBR_properties , "suffix_specular")
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "suffix_opacity") 
+        row.prop(bpy.context.scene.AUTOPBR_properties , "suffix_opacity") 
         row = layout.row(align = True)
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "filename_ext", expand=True)        
+        row.prop(bpy.context.scene.AUTOPBR_properties , "filename_ext", expand=True)        
         row = layout.row(align = True) 
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "materialtype", expand=True)        
+        row.prop(bpy.context.scene.AUTOPBR_properties , "materialtype", expand=True)        
         row = layout.row(align = True) 
-        row.prop(bpy.context.scene.AutoPBRMapper_setting , "assigntype", expand=True)  
+        row.prop(bpy.context.scene.AUTOPBR_properties , "assigntype", expand=True)  
         row = layout.row(align = True) 
         row.operator('autopbrmapper.actions',text = 'Assign Materials').button = 'AssignMaterial'
 
-class AutoPBRMapper_PT_renamer(bpy.types.Panel):
+class AUTOPBR_PT_renamer(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "AutoPBRMapper"
     bl_label = "Quick Renamer"
-    bl_parent_id = "AutoPBRMapper_PT_Panel"
+    bl_parent_id = "AUTOPBR_PT_panel"
     # bl_options = {"DEFAULT_CLOSED"}   
     
     def draw(self,context):
         layout = self.layout
         row = layout.row(align = False)
-        row.prop(context.scene.AutoPBRMapper_setting , "objects_collection", expand=True) 
+        row.prop(context.scene.AUTOPBR_properties , "objects_collection", expand=True) 
         row = layout.row(align = True)
         row.label(text='Target Name')
-        row.prop(context.scene.AutoPBRMapper_setting , "name_target", expand=False) 
+        row.prop(context.scene.AUTOPBR_properties , "name_target", expand=False) 
         row = layout.row(align = True)
         row.label(text='Rename Type')
-        row.prop(context.scene.AutoPBRMapper_setting , "rename_type", expand=False) 
-        if context.scene.AutoPBRMapper_setting.rename_type == 'COPY':
+        row.prop(context.scene.AUTOPBR_properties , "rename_type", expand=False) 
+        if context.scene.AUTOPBR_properties.rename_type == 'COPY':
             row = layout.row(align = False)
-            row.prop(context.scene.AutoPBRMapper_setting , "name_from", expand=False)
+            row.prop(context.scene.AUTOPBR_properties , "name_from", expand=False)
             row = layout.row(align = False)
             row.operator('autopbrmapper.actions',text = 'Apply Name').button = 'Apply Name'
-        elif context.scene.AutoPBRMapper_setting.rename_type == 'REPLACE':
+        elif context.scene.AUTOPBR_properties.rename_type == 'REPLACE':
             row = layout.row(align = False)
             row.label(text='Find')
             row.label(text='Replace to')
             row = layout.row(align = False)
-            row.prop(context.scene.AutoPBRMapper_setting , "string_find")
-            row.prop(context.scene.AutoPBRMapper_setting , "string_replace")
+            row.prop(context.scene.AUTOPBR_properties , "string_find")
+            row.prop(context.scene.AUTOPBR_properties , "string_replace")
             row = layout.row(align = False)
-            row.prop(context.scene.AutoPBRMapper_setting , "case_sensitive")
+            row.prop(context.scene.AUTOPBR_properties , "case_sensitive")
             row = layout.row(align = False)
             row.operator('autopbrmapper.actions',text = 'Find / Replace:').button = 'Find Replace'
 
-class AutoPBRMapper_PT_reAssign(bpy.types.Panel):
+class AUTOPBR_PT_reassign(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "AutoPBRMapper"
     bl_label = "ReAssign Material"
-    bl_parent_id = "AutoPBRMapper_PT_Panel"
+    bl_parent_id = "AUTOPBR_PT_panel"
 
     def draw(self,context):
         layout = self.layout
         row = layout.row(align = False)
-        row.operator('material_tools.export_material_data')
-        row.prop(context.scene.AutoPBRMapper_setting , "material_data_file") 
+        row.operator('material_tools.export_material_data', icon='EXPORT')
         row = layout.row(align = False)
-        
-        row.operator('material_tools.re_assign_material')
+        row.operator('material_tools.append_material', icon='IMPORT')
+        row = layout.row(align = False)
+        row.prop(context.scene.AUTOPBR_properties , "material_data_file") 
+        row = layout.row(align = False)
+        split = row.split(factor=0.3, align=False)
+        split.prop(context.scene.AUTOPBR_properties , "fuzzy_search")
+        split.operator('material_tools.re_assign_material')
 
 
 classes = (
-    AutoPBRMapper_PT_Panel,
-    AutoPBRMapper_PT_assigner,
-    AutoPBRMapper_PT_renamer,
-    AutoPBRMapper_PT_reAssign,
+    AUTOPBR_PT_panel,
+    AUTOPBR_PT_assigner,
+    AUTOPBR_PT_renamer,
+    AUTOPBR_PT_reassign,
 )
 
 def register():
