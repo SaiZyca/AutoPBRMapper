@@ -4,7 +4,7 @@ from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty,
 class AUTOPBR_properties(bpy.types.PropertyGroup):
 
     filepath : StringProperty(
-        default = "c:\\temp\\",
+        default = "//texture",
         subtype="DIR_PATH",
         name = "Texture Folder"
     )

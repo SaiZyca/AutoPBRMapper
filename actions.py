@@ -68,30 +68,132 @@ def get_preferences():
 def get_addon_name():
     return os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
-def assignMaterial():
-    os.system('cls')
+def assign_pbr_maps(material):
+    # os.system('cls')
+    autopbr_properties = bpy.context.scene.AUTOPBR_properties
+    tex_folder = autopbr_properties.filepath
+    ext = autopbr_properties.filename_ext
+    prefix = autopbr_properties.prefix
+    mMaterialtype = autopbr_properties.materialtype
+    margin = 100
 
-    tex_folder = bpy.context.scene.AUTOPBR_properties.filepath
-    ext = bpy.context.scene.AUTOPBR_properties.filename_ext
-    prefix = bpy.context.scene.AUTOPBR_properties.prefix
+    base_color_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_basecolor + ext) 
+    matellic_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_metallic + ext) 
+    specular_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_specular + ext) 
+    roughness_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_roughness + ext) 
+    opacity_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_opacity + ext) 
+    normal_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_normal + ext)  
 
-    mBaseColor = bpy.context.scene.AUTOPBR_properties.suffix_basecolor
-    mMetallic = bpy.context.scene.AUTOPBR_properties.suffix_metallic
-    mSpecular = bpy.context.scene.AUTOPBR_properties.suffix_specular
-    mRoughness = bpy.context.scene.AUTOPBR_properties.suffix_roughness
-    mOpacity = bpy.context.scene.AUTOPBR_properties.suffix_opacity
-    mNormal = bpy.context.scene.AUTOPBR_properties.suffix_normal
-    
-    mMaterialtype = bpy.context.scene.AUTOPBR_properties.materialtype
-    mAssigntype = bpy.context.scene.AUTOPBR_properties.assigntype
+    if material.use_nodes is not True:
+        material.use_nodes = True
 
-    marggin = 100
+    mat_nodes = material.node_tree.nodes
+    mat_links = material.node_tree.links
 
-    print (mAssigntype)
+    # inital shader
+    material.blend_method = "OPAQUE"
+    mat_nodes.clear() 
+    output_shader = mat_nodes.new("ShaderNodeOutputMaterial")
+    mix = mat_nodes.new("ShaderNodeMixShader")
+    mix.location = (-1 * (mix.width + margin), 150)
+    mix.inputs[0].default_value = 1
+    transparent = mat_nodes.new("ShaderNodeBsdfTransparent")
+    transparent.location = (-1 * 2 *(transparent.width + margin), 150)
+    main_shader = mat_nodes.new("ShaderNodeBsdfPrincipled")
+    main_shader.location = (-1 * 2 * (main_shader.width + margin), 0)
 
-    if mAssigntype == 'All':
+    if mMaterialtype == 'Principle':
+        mat_links.new(mix.outputs["Shader"], output_shader.inputs["Surface"])
+        mat_links.new(transparent.outputs["BSDF"], mix.inputs[1])
+        mat_links.new(main_shader.outputs["BSDF"], mix.inputs[2])
+    elif mMaterialtype == 'gltf' :
+        mat_links.new(main_shader.outputs["BSDF"], output_shader.inputs["Surface"])
+
+    # print (bpy.path.abspath(base_color_filepath))
+
+    if os.path.isfile(bpy.path.abspath(base_color_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(base_color_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = (-1 * 3 * (image_node.width + margin), 0)
+        image_node.image.colorspace_settings.name = 'sRGB'
+        mat_links.new(image_node.outputs["Color"], main_shader.inputs["Base Color"])
+ 
+    if os.path.isfile(bpy.path.abspath(matellic_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(matellic_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = (-1 * 4 * (image_node.width + margin), 0)
+        image_node.image.colorspace_settings.name = 'Linear'
+        mat_links.new(image_node.outputs["Color"], main_shader.inputs["Metallic"])
+
+    if os.path.isfile(bpy.path.abspath(specular_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(specular_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = (-1 * 5 * (image_node.width + margin), 0)
+        image_node.image.colorspace_settings.name = 'Linear'
+        mat_links.new(image_node.outputs["Color"], main_shader.inputs["Specular"])
+
+    if os.path.isfile(bpy.path.abspath(roughness_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(roughness_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = (-1 * 6 * (image_node.width + margin), 0)
+        image_node.image.colorspace_settings.name = 'Linear'
+        mat_links.new(image_node.outputs["Color"], main_shader.inputs["Roughness"])
+
+    if os.path.isfile(bpy.path.abspath(opacity_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(opacity_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = (-1 * 7 * (image_node.width + margin), 0)
+        image_node.image.colorspace_settings.name = 'Linear'
+        mat_links.new(image_node.outputs["Color"], mix.inputs[0])
+        material.blend_method = "BLEND"
+
+        
+
+    if os.path.isfile(bpy.path.abspath(normal_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(normal_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.image.colorspace_settings.name = 'Linear'
+        bump = mat_nodes.new("ShaderNodeBump")
+        bump.location = (-1 * 4 * (bump.width + margin), -400)
+        normal_map = mat_nodes.new("ShaderNodeNormalMap")
+        normal_map.location = (-1 * 5 * (normal_map.width + margin), -400)
+
+
+        if mMaterialtype == 'Principle':
+            image_node.location = (-1 * 7 * (image_node.width + margin), -400)
+            mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
+            mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
+            combin = mat_nodes.new("ShaderNodeCombineRGB")
+            combin.location = (-1 * 6 * (combin.width + margin), -400)
+            invert = mat_nodes.new("ShaderNodeInvert")
+            invert.location = (-1 * 7 *(invert.width + margin), -400)
+            sp = mat_nodes.new("ShaderNodeSeparateRGB")
+            sp.location = (-1 * 8 * (sp.width + margin), -400)
+            mat_links.new(combin.outputs["Image"], normal_map.inputs["Color"])
+            mat_links.new(sp.outputs["R"], combin.inputs["R"])
+            mat_links.new(sp.outputs["B"], combin.inputs["B"])
+            mat_links.new(sp.outputs["G"], invert.inputs["Color"])
+            mat_links.new(invert.outputs["Color"], combin.inputs["G"])
+            mat_links.new(image_node.outputs["Color"], sp.inputs["Image"])
+
+        elif mMaterialtype == 'gltf' :
+            image_node.location = (-1 * 5 * (image_node.width + margin), -400)
+            mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
+            mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
+            mat_links.new(image_node.outputs["Color"], normal_map.inputs["Color"])     
+
+#
+
+def collect_materials(type):
+    if type == 'All':
         materials = bpy.data.materials
-    elif mAssigntype == 'Selected':
+    elif type == 'Selected':
         selectedObjects = bpy.context.selected_objects
         materials = []
         for object in selectedObjects:
@@ -99,143 +201,8 @@ def assignMaterial():
             for slot in material_slots:
                 materials.append(slot.material)
 
-
-    for material in materials:
-        main_name = material.name
-        tempPathA = (tex_folder + '/' + prefix + main_name + mBaseColor + ext)
-
-        if material.use_nodes is not True:
-            material.use_nodes = True
-        # Test if path available
-        if os.path.isfile(tempPathA):
-
-            mat_nodes = material.node_tree.nodes
-            mat_links = material.node_tree.links
-
-            mat_nodes.clear() # remove all before create our own
-            output_shader = mat_nodes.new("ShaderNodeOutputMaterial")
-
-            mix = mat_nodes.new("ShaderNodeMixShader")
-            mix.location = (-1 * (mix.width + marggin), 150)
-            mix.inputs[0].default_value = 1
-
-            transparent = mat_nodes.new("ShaderNodeBsdfTransparent")
-            transparent.location = (-1 * 2 *(transparent.width + marggin), 150)
-
-            main_shader = mat_nodes.new("ShaderNodeBsdfPrincipled")
-            main_shader.location = (-1 * 2 * (main_shader.width + marggin), 0)
+    return materials
 
 
-            tex_base_color = mat_nodes.new("ShaderNodeTexImage")
-            try:
-                tex_base_color.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mBaseColor + ext)), check_existing=True)
-                tex_base_color.image.colorspace_settings.name = 'sRGB'
-            except RuntimeError as e:
-                print(prefix + main_name + " has no baseColor map.\n" + str(e))
-            tex_base_color.hide = True
-            tex_base_color.location = (-1 * 3 * (tex_base_color.width + marggin), 0)
-
-
-            tex_metallic = mat_nodes.new("ShaderNodeTexImage")
-            try:
-                tex_metallic.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mMetallic + ext)), check_existing=True)
-                tex_metallic.image.colorspace_settings.name = 'Linear'
-            except RuntimeError as e:
-                print(prefix + main_name + " has no metallic map.\n" + str(e))
-            # tex_metallic.color_space="NONE"
-            tex_metallic.hide = True
-            tex_metallic.location = (-1 * 4 * (tex_metallic.width + marggin), 0)
-
-
-            tex_specular = mat_nodes.new("ShaderNodeTexImage")
-            try:
-                tex_specular.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mSpecular + ext)), check_existing=True)
-                tex_specular.image.colorspace_settings.name = 'Linear'
-            except RuntimeError as e:
-                print(prefix + main_name + " has no specular map.\n" + str(e))
-            # tex_specular.color_space = "NONE"
-            tex_specular.hide = True
-            tex_specular.location = (-1 * 5 * (tex_specular.width + marggin), 0)
-
-
-            tex_roughness = mat_nodes.new("ShaderNodeTexImage")
-            try:
-                tex_roughness.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mRoughness + ext)), check_existing=True)
-                tex_roughness.image.colorspace_settings.name = 'Linear'
-            except RuntimeError as e:
-                print(prefix + main_name + " has no roughness map.\n" + str(e))
-            # tex_roughness.color_space="NONE"
-            tex_roughness.hide = True
-            tex_roughness.location = (-1 * 6 * (tex_roughness.width + marggin), 0)
-
-
-            opcity_exist  = True
-            tex_opacity = mat_nodes.new("ShaderNodeTexImage")
-            try:
-                tex_opacity.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mOpacity + ext)), check_existing=True)
-                tex_opacity.image.colorspace_settings.name = 'Linear'
-            except RuntimeError as e:
-                opcity_exist = False
-                print(prefix + main_name + " has no opacity map.\n" + str(e))
-            # tex_opacity.color_space = "NONE"
-            tex_opacity.hide = True
-            tex_opacity.location = (-1 * 2 * (tex_opacity.width + marggin), 300)
-
-
-            tex_normal = mat_nodes.new("ShaderNodeTexImage")
-            try:
-                tex_normal.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mNormal + ext)), check_existing=True)
-                tex_normal.image.colorspace_settings.name = 'Non-Color'
-            except RuntimeError as e:
-                print(prefix + main_name + " has no normal map.\n" + str(e))
-            # tex_normal.color_space = "NONE"
-            tex_normal.hide = True
-            tex_normal.location = (-1 * 6.5 * (tex_normal.width + marggin), -400)
-
-
-            # unitity nodes
-            bump = mat_nodes.new("ShaderNodeBump")
-            bump.location = (-1 * 4 * (bump.width + marggin), -400)
-            normal_map = mat_nodes.new("ShaderNodeNormalMap")
-            normal_map.location = (-1 * 5 * (normal_map.width + marggin), -400)
-            combin = mat_nodes.new("ShaderNodeCombineRGB")
-            combin.location = (-1 * 6 * (combin.width + marggin), -400)
-            invert = mat_nodes.new("ShaderNodeInvert")
-            invert.location = (-1 * 7 *(invert.width + marggin), -400)
-            sp = mat_nodes.new("ShaderNodeSeparateRGB")
-            sp.location = (-1 * 8 * (sp.width + marggin), -400)
-
-            # link
-
-            mat_links.new(tex_base_color.outputs["Color"], main_shader.inputs["Base Color"])
-            mat_links.new(tex_metallic.outputs["Color"], main_shader.inputs["Metallic"])
-            mat_links.new(tex_specular.outputs["Color"], main_shader.inputs["Specular"])
-            mat_links.new(tex_roughness.outputs["Color"], main_shader.inputs["Roughness"])
-      
-            if opcity_exist:
-                mat_links.new(tex_opacity.outputs["Color"], mix.inputs[0])
-
-            if mMaterialtype == 'Principle':
-                mat_links.new(mix.outputs["Shader"], output_shader.inputs["Surface"])
-                mat_links.new(transparent.outputs["BSDF"], mix.inputs[1])
-                mat_links.new(main_shader.outputs["BSDF"], mix.inputs[2])
-                mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
-                mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
-                mat_links.new(combin.outputs["Image"], normal_map.inputs["Color"])
-                mat_links.new(sp.outputs["R"], combin.inputs["R"])
-                mat_links.new(sp.outputs["B"], combin.inputs["B"])
-                mat_links.new(sp.outputs["G"], invert.inputs["Color"])
-                mat_links.new(invert.outputs["Color"], combin.inputs["G"])
-                mat_links.new(tex_normal.outputs["Color"], sp.inputs["Image"])
-
-            elif mMaterialtype == 'gltf' :
-                mat_links.new(main_shader.outputs["BSDF"], output_shader.inputs["Surface"])
-                mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
-                mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
-                mat_links.new(tex_normal.outputs["Color"], normal_map.inputs["Color"])
-        
-        else:
-            print ("%s not exist" % (tempPathA))
-            # print
-            # print ( 'Material:{0} -- auto PBR assigned Success '.format(main_name) )
-
+def check_pbr_map(file_path):
+    pass

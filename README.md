@@ -20,8 +20,10 @@ auto assign material with suffix mamed texture maps.
 
 
 ## Update
-+ 20210803:
-  fix pbr path error when use folder select button 
++ 20210803:  
+  fix pbr path error when use folder select button  
+  fix non opacity shader's alpha blend mode
+  fix gltf shader function broken
 
 - 20210630:  
   re assign material now more clearly to use .

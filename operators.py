@@ -153,6 +153,21 @@ class AUTO_PBR_OT_reassign_material(bpy.types.Operator):
 class MaterialTools_OT_assignPbrMaps(bpy.types.Operator):
     bl_idname = "material_tools.assign_bpr_maps"
     bl_label = "Assign PBR maps"
+    bl_description = "auto assign pbr map form folder"
+
+    def execute(self, context):
+        autopbr_properties = bpy.context.scene.AUTOPBR_properties
+        mAssigntype = autopbr_properties.assigntype
+
+        materials = actions.collect_materials(mAssigntype)
+        for material in materials:
+            result = actions.assign_pbr_maps(material)
+        # message = "process material %s" % (material.name)
+        # self.report({'INFO'}, (message) )
+        # assign_pbr_map()
+
+        return {'FINISHED'}
+ 
 
 class AutoPBRMapper_OT_Actions(bpy.types.Operator):
     """ Actions """
@@ -162,27 +177,24 @@ class AutoPBRMapper_OT_Actions(bpy.types.Operator):
 
     button : bpy.props.StringProperty(default="")
     texturepath : bpy.props.StringProperty(default="")
-    # texturepath : bpy.context.scene.AUTOPBR_properties.filepath
 
     def execute(self, context):
         button=self.button
         try:
             ## ObjectOperator
             if button=="AssignMaterial": 
-                actions.assignMaterial()
-
+                actions.assign_pbr_maps()
             elif button == 'Apply Name':
                 actions.data_rename()
-
             elif button == 'Find Replace':
                 actions.find_replace()
-
             else:
                 print ('Not defined !')
         except Exception as e:
             print ('Execute Error:',e)
         
         return {"FINISHED"}
+
 
 
 classes = (

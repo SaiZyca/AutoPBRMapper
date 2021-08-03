@@ -44,7 +44,7 @@ class AUTOPBR_PT_assigner(bpy.types.Panel):
         row = layout.row(align = True) 
         row.prop(bpy.context.scene.AUTOPBR_properties , "assigntype", expand=True)  
         row = layout.row(align = True) 
-        row.operator('autopbrmapper.actions',text = 'Assign Materials').button = 'AssignMaterial'
+        row.operator('material_tools.assign_bpr_maps',text = 'Assign Materials')
 
 class AUTOPBR_PT_renamer(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
