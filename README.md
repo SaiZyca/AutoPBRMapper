@@ -20,7 +20,10 @@ auto assign material with suffix mamed texture maps.
 
 
 ## Update
-- 20210630
++ 20210803:
+  fix pbr path error when use folder select button 
+
+- 20210630:  
   re assign material now more clearly to use .
 
 - 20210608:  

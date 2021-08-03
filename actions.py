@@ -11,7 +11,7 @@ import re
 
 def get_objects():
     objects = None
-    value = bpy.context.scene.AutoPBRMapper_setting.objects_collection
+    value = bpy.context.scene.AUTOPBR_properties.objects_collection
     if value == 'ALL':
         objects = bpy.context.scene.objects
     elif value == 'SELECTION':
@@ -33,10 +33,10 @@ def get_name_dict(obj):
 
 def find_replace():
     objects = get_objects()
-    name_target = bpy.context.scene.AutoPBRMapper_setting.name_target
-    string_find = bpy.context.scene.AutoPBRMapper_setting.string_find
-    string_replace = bpy.context.scene.AutoPBRMapper_setting.string_replace
-    case_sensitive = bpy.context.scene.AutoPBRMapper_setting.case_sensitive
+    name_target = bpy.context.scene.AUTOPBR_properties.name_target
+    string_find = bpy.context.scene.AUTOPBR_properties.string_find
+    string_replace = bpy.context.scene.AUTOPBR_properties.string_replace
+    case_sensitive = bpy.context.scene.AUTOPBR_properties.case_sensitive
 
     for obj in objects:
         data_dict = get_name_dict(obj)
@@ -51,8 +51,8 @@ def find_replace():
 
 def data_rename():
     objects = get_objects()
-    name_target = bpy.context.scene.AutoPBRMapper_setting.name_target
-    name_from = bpy.context.scene.AutoPBRMapper_setting.name_from
+    name_target = bpy.context.scene.AUTOPBR_properties.name_target
+    name_from = bpy.context.scene.AUTOPBR_properties.name_from
     
     for obj in objects:
         data_dict = get_name_dict(obj)
@@ -71,19 +71,19 @@ def get_addon_name():
 def assignMaterial():
     os.system('cls')
 
-    tex_folder = bpy.context.scene.AutoPBRMapper_setting.filepath
-    ext = bpy.context.scene.AutoPBRMapper_setting.filename_ext
-    prefix = bpy.context.scene.AutoPBRMapper_setting.prefix
+    tex_folder = bpy.context.scene.AUTOPBR_properties.filepath
+    ext = bpy.context.scene.AUTOPBR_properties.filename_ext
+    prefix = bpy.context.scene.AUTOPBR_properties.prefix
 
-    mBaseColor = bpy.context.scene.AutoPBRMapper_setting.suffix_basecolor
-    mMetallic = bpy.context.scene.AutoPBRMapper_setting.suffix_metallic
-    mSpecular = bpy.context.scene.AutoPBRMapper_setting.suffix_specular
-    mRoughness = bpy.context.scene.AutoPBRMapper_setting.suffix_roughness
-    mOpacity = bpy.context.scene.AutoPBRMapper_setting.suffix_opacity
-    mNormal = bpy.context.scene.AutoPBRMapper_setting.suffix_normal
+    mBaseColor = bpy.context.scene.AUTOPBR_properties.suffix_basecolor
+    mMetallic = bpy.context.scene.AUTOPBR_properties.suffix_metallic
+    mSpecular = bpy.context.scene.AUTOPBR_properties.suffix_specular
+    mRoughness = bpy.context.scene.AUTOPBR_properties.suffix_roughness
+    mOpacity = bpy.context.scene.AUTOPBR_properties.suffix_opacity
+    mNormal = bpy.context.scene.AUTOPBR_properties.suffix_normal
     
-    mMaterialtype = bpy.context.scene.AutoPBRMapper_setting.materialtype
-    mAssigntype = bpy.context.scene.AutoPBRMapper_setting.assigntype
+    mMaterialtype = bpy.context.scene.AUTOPBR_properties.materialtype
+    mAssigntype = bpy.context.scene.AUTOPBR_properties.assigntype
 
     marggin = 100
 
@@ -102,7 +102,7 @@ def assignMaterial():
 
     for material in materials:
         main_name = material.name
-        tempPathA = (tex_folder + '\\' + prefix + main_name + mBaseColor + ext)
+        tempPathA = (tex_folder + '/' + prefix + main_name + mBaseColor + ext)
 
         if material.use_nodes is not True:
             material.use_nodes = True
@@ -169,7 +169,7 @@ def assignMaterial():
             tex_roughness.location = (-1 * 6 * (tex_roughness.width + marggin), 0)
 
 
-            opcity_exist = True
+            opcity_exist  = True
             tex_opacity = mat_nodes.new("ShaderNodeTexImage")
             try:
                 tex_opacity.image = bpy.data.images.load(os.path.join(tex_folder, (prefix + main_name + mOpacity + ext)), check_existing=True)

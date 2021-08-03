@@ -5,7 +5,7 @@ class AUTOPBR_properties(bpy.types.PropertyGroup):
 
     filepath : StringProperty(
         default = "c:\\temp\\",
-        subtype="FILE_PATH",
+        subtype="DIR_PATH",
         name = "Texture Folder"
     )
     prefix : StringProperty(
