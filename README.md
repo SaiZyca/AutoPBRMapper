@@ -20,6 +20,11 @@ auto assign material with suffix mamed texture maps.
 
 
 ## Update
++ 20210810:
+  fix glass/opacity realtime display problem due to eevee changed 
+  add opacity map invert node for quick fix different asset workflow   
+  more clear material tree  
+
 + 20210803:  
   fix pbr path error when use folder select button  
   fix non opacity shader's alpha blend mode  

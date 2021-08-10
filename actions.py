@@ -9,6 +9,8 @@ import bpy
 import os
 import re
 
+from mathutils import Vector
+
 def get_objects():
     objects = None
     value = bpy.context.scene.AUTOPBR_properties.objects_collection
@@ -68,6 +70,21 @@ def get_preferences():
 def get_addon_name():
     return os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
+def opacity_material(material):
+    material.blend_method = "BLEND"
+
+def not_opacity_material(material):
+    material.blend_method = "OPAQUE"
+    material.show_transparent_back = False
+
+def hide_shader_scoket(shader_node, status=True):
+    for input in shader_node.inputs:
+        input.hide = status
+
+def offset_node_loaction(origin, x_offset, y_offset):
+    new_loaction = (origin.x + x_offset, origin.y + y_offset)
+    return new_loaction
+
 def assign_pbr_maps(material):
     # os.system('cls')
     autopbr_properties = bpy.context.scene.AUTOPBR_properties
@@ -92,19 +109,28 @@ def assign_pbr_maps(material):
 
     # inital shader
     material.blend_method = "OPAQUE"
+    material.show_transparent_back = False
+
     mat_nodes.clear() 
     output_shader = mat_nodes.new("ShaderNodeOutputMaterial")
     mix = mat_nodes.new("ShaderNodeMixShader")
-    mix.location = (-1 * (mix.width + margin), 150)
+    mix.location = offset_node_loaction(output_shader.location, -200, 0)
     mix.inputs[0].default_value = 1
-    transparent = mat_nodes.new("ShaderNodeBsdfTransparent")
-    transparent.location = (-1 * 2 *(transparent.width + margin), 150)
+    glass_shader = mat_nodes.new("ShaderNodeBsdfPrincipled")
+    glass_shader.label = "Glass Shader"
+    glass_shader.location = offset_node_loaction(mix.location, -300, -20)
+    glass_shader.inputs['Base Color'].default_value = (0.2, 0.2, 0.2, 1)
+    glass_shader.inputs['Roughness'].default_value = 0.16
+    glass_shader.inputs['Transmission'].default_value = 0.9
+    glass_shader.inputs['IOR'].default_value = 1.01
+    glass_shader.inputs['Alpha'].default_value = 0.8
+    
     main_shader = mat_nodes.new("ShaderNodeBsdfPrincipled")
-    main_shader.location = (-1 * 2 * (main_shader.width + margin), 0)
+    main_shader.location = offset_node_loaction(mix.location, -300, -150)
 
     if mMaterialtype == 'Principle':
         mat_links.new(mix.outputs["Shader"], output_shader.inputs["Surface"])
-        mat_links.new(transparent.outputs["BSDF"], mix.inputs[1])
+        mat_links.new(glass_shader.outputs["BSDF"], mix.inputs[1])
         mat_links.new(main_shader.outputs["BSDF"], mix.inputs[2])
     elif mMaterialtype == 'gltf' :
         mat_links.new(main_shader.outputs["BSDF"], output_shader.inputs["Surface"])
@@ -115,7 +141,7 @@ def assign_pbr_maps(material):
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(base_color_filepath, check_existing=True)
         image_node.hide = True
-        image_node.location = (-1 * 3 * (image_node.width + margin), 0)
+        image_node.location = offset_node_loaction(main_shader.location, -300, -50)
         image_node.image.colorspace_settings.name = 'sRGB'
         mat_links.new(image_node.outputs["Color"], main_shader.inputs["Base Color"])
  
@@ -123,7 +149,7 @@ def assign_pbr_maps(material):
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(matellic_filepath, check_existing=True)
         image_node.hide = True
-        image_node.location = (-1 * 4 * (image_node.width + margin), 0)
+        image_node.location = offset_node_loaction(main_shader.location, -600, -50)
         image_node.image.colorspace_settings.name = 'Linear'
         mat_links.new(image_node.outputs["Color"], main_shader.inputs["Metallic"])
 
@@ -131,7 +157,7 @@ def assign_pbr_maps(material):
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(specular_filepath, check_existing=True)
         image_node.hide = True
-        image_node.location = (-1 * 5 * (image_node.width + margin), 0)
+        image_node.location = offset_node_loaction(main_shader.location, -900, -50)
         image_node.image.colorspace_settings.name = 'Linear'
         mat_links.new(image_node.outputs["Color"], main_shader.inputs["Specular"])
 
@@ -139,20 +165,24 @@ def assign_pbr_maps(material):
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(roughness_filepath, check_existing=True)
         image_node.hide = True
-        image_node.location = (-1 * 6 * (image_node.width + margin), 0)
+        image_node.location = offset_node_loaction(main_shader.location, -1200, -50)
         image_node.image.colorspace_settings.name = 'Linear'
         mat_links.new(image_node.outputs["Color"], main_shader.inputs["Roughness"])
 
     if os.path.isfile(bpy.path.abspath(opacity_filepath)):
+        invert_node = mat_nodes.new("ShaderNodeInvert")
+        invert_node.location = offset_node_loaction(mix.location, -300, 100)
+        invert_node.inputs['Fac'].default_value = 0
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(opacity_filepath, check_existing=True)
         image_node.hide = True
-        image_node.location = (-1 * 7 * (image_node.width + margin), 0)
+        image_node.location = offset_node_loaction(invert_node.location, -300, -80)
         image_node.image.colorspace_settings.name = 'Linear'
-        mat_links.new(image_node.outputs["Color"], mix.inputs[0])
-        material.blend_method = "BLEND"
 
         
+        mat_links.new(image_node.outputs["Color"], invert_node.inputs["Color"])
+        mat_links.new(invert_node.outputs["Color"], mix.inputs[0])
+        material.blend_method = "BLEND"
 
     if os.path.isfile(bpy.path.abspath(normal_filepath)):
         image_node = mat_nodes.new("ShaderNodeTexImage")
@@ -186,9 +216,11 @@ def assign_pbr_maps(material):
             image_node.location = (-1 * 5 * (image_node.width + margin), -400)
             mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
             mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
-            mat_links.new(image_node.outputs["Color"], normal_map.inputs["Color"])     
+            mat_links.new(image_node.outputs["Color"], normal_map.inputs["Color"])
 
-#
+    hide_shader_scoket(glass_shader)
+    hide_shader_scoket(main_shader)
+#   
 
 def collect_materials(type):
     if type == 'All':

@@ -12,14 +12,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+# last update: 2021/08/10
 
 
 bl_info = {
     "name" : "AutoPBRMapper",
     "author" : "Sai Ling",
     "description": "Auto PBR Mapper",
-    "version": (0, 0, 1),
+    "version": (0, 1, 1),
     "blender" : (2, 80, 0),
     "location": "View3D > Sidebar",
     "warning" : "",
