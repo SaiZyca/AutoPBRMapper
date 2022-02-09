@@ -1,5 +1,5 @@
 import bpy
-from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty, IntProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty, IntProperty, BoolVectorProperty
 
 class AUTOPBR_properties(bpy.types.PropertyGroup):
 
@@ -16,9 +16,21 @@ class AUTOPBR_properties(bpy.types.PropertyGroup):
         default = "_BaseColor",
         name = "BaseColor Suffix",
     )
+    suffix_emission : StringProperty(
+        default = "_Emission",
+        name = "Emission Suffix",
+    )
+    suffix_height : StringProperty(
+        default = "_Height",
+        name = "Height Suffix",
+    )
     suffix_normal : StringProperty(
         default = "_Normal",
         name = "Normal Suffix",
+    )
+    suffix_displace : StringProperty(
+        default = "_Displace",
+        name = "Displace Suffix",
     )
     suffix_metallic: StringProperty(
         default = "_Metallic",
@@ -39,16 +51,44 @@ class AUTOPBR_properties(bpy.types.PropertyGroup):
     filename_ext : EnumProperty(
         items = [
             ('.png','.png','*.png'),
-            ('.jpg','.jpg','*.jpg')
+            ('.jpg','.jpg','*.jpg'),
+            ('.exr','.exr','*.exr'),
             
         ],
         name = 'File Extension'
     )
+    exportfolder : StringProperty(
+        default = "//texture/convert",
+        subtype="DIR_PATH",
+        name = "Export Folder"
+    )
+    export_ext : EnumProperty(
+        items = [
+            ('.png','.png','*.png'),
+            ('.jpg','.jpg','*.jpg'),
+            ('.exr','.exr','*.exr'),
+        ],
+        name = 'Export File Extension'
+    )
+    export_scale : IntProperty(
+        description="Scale image size",
+        subtype = 'PERCENTAGE',
+        default = 100,
+        min = 1,
+        max = 100,
+        step = 100,
+        name = 'Scale'
+    )
+    filp_normal_map : BoolVectorProperty(
+        name="Flip Normal",
+        description="Flip normal map channel for D3D <--> OpenGL",
+        size=3,
+        default = (False, False, False)
+    ) 
     materialtype : EnumProperty(
         items = [
-            ('Principle','Principle','Principle for cycles or Eevee'),
-            ('gltf','gltf','gltf for babylon js')
-        
+            ('Mix','Mix','Mix Opacity map with Glass Shader'),
+            ('Principle','Principle','All Map with one Principle Shader'),   
         ],
         name = 'Material Type'
     )

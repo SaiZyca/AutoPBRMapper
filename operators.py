@@ -1,5 +1,5 @@
 import bpy
-import os, json
+import os, json ,ntpath
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from . import actions
 
@@ -150,24 +150,89 @@ class AUTO_PBR_OT_reassign_material(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MaterialTools_OT_assignPbrMaps(bpy.types.Operator):
-    bl_idname = "material_tools.assign_bpr_maps"
-    bl_label = "Assign PBR maps"
+class MaterialTools_OT_assign_pbr_maps(bpy.types.Operator):
+    bl_idname = "material_tools.assign_pbr_maps"
+    bl_label = "Assign PBR Maps"
     bl_description = "auto assign pbr map form folder"
 
     def execute(self, context):
-        autopbr_properties = bpy.context.scene.AUTOPBR_properties
-        mAssigntype = autopbr_properties.assigntype
-
-        materials = actions.collect_materials(mAssigntype)
+        materials = actions.get_materials()
         for material in materials:
             result = actions.assign_pbr_maps(material)
-        # message = "process material %s" % (material.name)
-        # self.report({'INFO'}, (message) )
+            message = "process material %s -- %s" % (material.name, result)
+            self.report({'INFO'}, str(message) )
         # assign_pbr_map()
 
         return {'FINISHED'}
  
+class MaterialTools_OT_copy_name(bpy.types.Operator):
+    bl_idname = "material_tools.copy_name"
+    bl_label = "Copy Name"
+    bl_description = "Copy Name From Data"
+
+    def execute(self, context):
+        objects = actions.get_objects()
+        name_target = context.scene.AUTOPBR_properties.name_target
+        name_from = context.scene.AUTOPBR_properties.name_from
+
+        for obj in objects:
+            data_dict = actions.get_name_dict(obj)
+            # self.report({'INFO'}, str(data_dict) )
+            if data_dict[name_from] and data_dict[name_target] is not None:
+                data_dict[name_target].name = data_dict[name_from].name
+
+        return {'FINISHED'}
+
+class MaterialTools_OT_reset_material(bpy.types.Operator):
+    bl_idname = "material_tools.reset_material"
+    bl_label = "Reset Materials"
+    bl_description = "Create new material for objects"
+
+    def execute(self, context):
+        objects = actions.get_objects()
+        materials = bpy.data.materials
+
+        for obj in objects:
+            if not bpy.data.materials.get(obj.name):
+                material = bpy.data.materials.new(name=obj.name)
+                obj.data.materials[0] = material
+            else:
+                obj.data.materials[0] = bpy.data.materials.get(obj.name)
+
+        for material in bpy.data.materials:
+            if material.users == 0:
+                bpy.data.materials.remove(material)
+
+        return {'FINISHED'}
+
+class MaterialTools_OT_convert_texture(bpy.types.Operator):
+    bl_idname = "material_tools.convert_texture"
+    bl_label = "Convert Texture"
+    bl_description = "Convert scene textures to other format"
+
+    def execute(self, context):
+        message = ""
+        bpy.ops.file.make_paths_absolute()
+        image_settings = context.scene.render.image_settings
+        export_folder = context.scene.AUTOPBR_properties.exportfolder
+        temp_file = context.scene.render.frame_path(frame=1)
+        render_folder, export_file_extension = ntpath.splitext(temp_file)
+        images = [image for image in bpy.data.images if image.name !="Render Result"]
+        export_folder = bpy.path.abspath(export_folder)
+        if not os.path.exists(export_folder):
+            os.makedirs(export_folder)
+        for image in images:
+            file_folder, full_file_name = ntpath.split(image.filepath)
+            file_name, file_extension = ntpath.splitext(full_file_name)
+            new_file_path = "%s/%s%s" % (export_folder, file_name, export_file_extension)
+            image.save_render(filepath=new_file_path, scene = context.scene)
+            # message = "%s %s" % (image.name, new_file_path)
+            # filename = ntpath.basename(image.filepath)
+            # self.report({'INFO'}, str(message) )
+        # bpy.ops.file.make_paths_relative()
+
+        return {'FINISHED'}
+
 
 class AutoPBRMapper_OT_Actions(bpy.types.Operator):
     """ Actions """
@@ -200,9 +265,12 @@ class AutoPBRMapper_OT_Actions(bpy.types.Operator):
 classes = (
     AUTO_PBR_OT_export_material_data,
     AUTO_PBR_OT_reassign_material,
-    MaterialTools_OT_assignPbrMaps,
+    MaterialTools_OT_assign_pbr_maps,
     AutoPBRMapper_OT_Actions,
     AUTO_PBR_OT_append_material,
+    MaterialTools_OT_copy_name,
+    MaterialTools_OT_reset_material,
+    MaterialTools_OT_convert_texture,
 )
 
 def register():
