@@ -58,7 +58,7 @@ class AUTOPBR_properties(bpy.types.PropertyGroup):
         name = 'File Extension'
     )
     exportfolder : StringProperty(
-        default = "//texture/convert",
+        default = r"//texture/convert\\",
         subtype="DIR_PATH",
         name = "Export Folder"
     )

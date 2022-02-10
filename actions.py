@@ -6,36 +6,82 @@ colorspace setting move to image node from shader node
 '''
 
 import bpy
-import os
+import os, ntpath
 import re
 
 from mathutils import Vector
 
-def get_objects():
+def context_collect_objects(mode: str, type: str) -> list:
+    ''' mode: "ALL/SELECTION"
+        type: "MESH/CURVE/SURFACE/LIGHT...etc"
+    '''
     objects = None
-    value = bpy.context.scene.AUTOPBR_properties.objects_collection
-    if value == 'ALL':
-        objects = bpy.context.scene.objects
-    elif value == 'SELECTION':
-        objects = bpy.context.selected_objects
-    
+
+    if mode == 'ALL':
+        objects = [obj for obj in bpy.context.scene.objects if obj.type == type]
+    elif mode == 'SELECTION':
+        objects = [obj for obj in bpy.context.selected_objects if obj.type == type]
+
     return objects
 
-def get_materials():
+def datablock_op_remove_image(images: list) -> list: 
+    '''remove image block, if None remove all image block
+    '''
+    [bpy.data.images.remove(image) for image in images]
+
+    return bpy.data.images
+
+def datablock_op_fix_image_name() -> list:
+    '''force image block name as file name
+    '''
+    images = [image for image in bpy.data.images if image.name !="Render Result"]
+    for image in images:
+        image.name = ntpath.basename(image.filepath)
+
+    images = [image for image in bpy.data.images if image.name !="Render Result"]
+    return images 
+
+def datablock_collect_materials(mode: str) -> list:
+    '''mode: "ALL/SELECTION"
+    '''
     objects = None
     materials = None
-    value = bpy.context.scene.AUTOPBR_properties.objects_collection
-    if value == 'ALL':
+
+    if mode == 'ALL':
         materials = bpy.data.materials
-    elif value == 'SELECTION':
+    elif mode == 'SELECTION':
         objects = bpy.context.selected_objects
         materials = []
         for obj in objects:
             material_slots = obj.material_slots
             for slot in material_slots:
-                materials.append(slot.material)
+                if slot.material not in materials:
+                    materials.append(slot.material)
 
     return materials
+
+def datablock_collect_images(mode: str) -> list:
+    '''mode: "ALL/SELECTION"
+    '''
+    images = []
+
+    if mode == 'ALL':
+        images = [image for image in bpy.data.images if image.name !="Render Result"]
+    elif mode == 'SELECTION':
+        materials = []
+        objects = bpy.context.selected_objects
+        for obj in objects:
+            material_slots = obj.material_slots
+            for slot in material_slots:
+                if slot.material not in materials:
+                    materials.append(slot.material)
+        
+        images = []
+        for material in materials:
+            node_images = [node.image for node in material.node_tree.nodes if node.type == 'TEX_IMAGE' and node.image is not None]
+            [images.append(image) for image in node_images if image not in images]
+
+    return images
 
 def get_name_dict(obj):
     data_dict = {}
@@ -77,6 +123,7 @@ def data_rename():
         print (data_dict)
         if data_dict[name_from] and data_dict[name_target] is not None:
             data_dict[name_target].name = data_dict[name_from].name
+
 
 
 def get_preferences():

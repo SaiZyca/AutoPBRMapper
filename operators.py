@@ -156,7 +156,10 @@ class MaterialTools_OT_assign_pbr_maps(bpy.types.Operator):
     bl_description = "auto assign pbr map form folder"
 
     def execute(self, context):
-        materials = actions.get_materials()
+        mode = context.scene.AUTOPBR_properties.objects_collection
+        materials = actions.datablock_collect_materials(mode)
+        images = actions.datablock_collect_images(mode=mode)
+        actions.datablock_op_remove_image(images=images)
         for material in materials:
             result = actions.assign_pbr_maps(material)
             message = "process material %s -- %s" % (material.name, result)
@@ -171,7 +174,8 @@ class MaterialTools_OT_copy_name(bpy.types.Operator):
     bl_description = "Copy Name From Data"
 
     def execute(self, context):
-        objects = actions.get_objects()
+        mode = bpy.context.scene.AUTOPBR_properties.objects_collection
+        objects = actions.context_collect_objects(mode=mode, type='MESH')
         name_target = context.scene.AUTOPBR_properties.name_target
         name_from = context.scene.AUTOPBR_properties.name_from
 
@@ -189,7 +193,8 @@ class MaterialTools_OT_reset_material(bpy.types.Operator):
     bl_description = "Create new material for objects"
 
     def execute(self, context):
-        objects = actions.get_objects()
+        mode = bpy.context.scene.AUTOPBR_properties.objects_collection
+        objects = actions.context_collect_objects(mode=mode, type='MESH')
         materials = bpy.data.materials
 
         for obj in objects:
@@ -212,20 +217,27 @@ class MaterialTools_OT_convert_texture(bpy.types.Operator):
 
     def execute(self, context):
         message = ""
+        ratio = context.scene.AUTOPBR_properties.export_scale/100
         bpy.ops.file.make_paths_absolute()
         image_settings = context.scene.render.image_settings
         export_folder = context.scene.AUTOPBR_properties.exportfolder
         temp_file = context.scene.render.frame_path(frame=1)
         render_folder, export_file_extension = ntpath.splitext(temp_file)
         images = [image for image in bpy.data.images if image.name !="Render Result"]
+
         export_folder = bpy.path.abspath(export_folder)
         if not os.path.exists(export_folder):
             os.makedirs(export_folder)
+        
         for image in images:
             file_folder, full_file_name = ntpath.split(image.filepath)
             file_name, file_extension = ntpath.splitext(full_file_name)
             new_file_path = "%s/%s%s" % (export_folder, file_name, export_file_extension)
+            if ratio < 1:
+                image.scale(image.size[0]*ratio, image.size[1]*ratio)
             image.save_render(filepath=new_file_path, scene = context.scene)
+
+            # image.filepath_raw = new_file_path
             # message = "%s %s" % (image.name, new_file_path)
             # filename = ntpath.basename(image.filepath)
             # self.report({'INFO'}, str(message) )

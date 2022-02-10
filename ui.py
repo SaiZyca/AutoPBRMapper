@@ -145,6 +145,9 @@ class AUTOPBR_PT_texture_converter(bpy.types.Panel):
         row.operator("material_tools.convert_texture") 
         # file format settings
         box = layout.box()
+        row = box.row(align = True)
+        row.label(text="Format setting is sync scene render settings", icon="INFO")
+        row = box.row(align = True)
         box.prop(image_settings , "file_format")
         row = box.row(align = True)
         row.prop(image_settings , "color_mode", expand=True)
