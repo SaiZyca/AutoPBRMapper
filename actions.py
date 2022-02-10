@@ -6,20 +6,82 @@ colorspace setting move to image node from shader node
 '''
 
 import bpy
-import os
+import os, ntpath
 import re
 
 from mathutils import Vector
 
-def get_objects():
+def context_collect_objects(mode: str, type: str) -> list:
+    ''' mode: "ALL/SELECTION"
+        type: "MESH/CURVE/SURFACE/LIGHT...etc"
+    '''
     objects = None
-    value = bpy.context.scene.AUTOPBR_properties.objects_collection
-    if value == 'ALL':
-        objects = bpy.context.scene.objects
-    elif value == 'SELECTION':
-        objects = bpy.context.selected_objects
-    
+
+    if mode == 'ALL':
+        objects = [obj for obj in bpy.context.scene.objects if obj.type == type]
+    elif mode == 'SELECTION':
+        objects = [obj for obj in bpy.context.selected_objects if obj.type == type]
+
     return objects
+
+def datablock_op_remove_image(images: list) -> list: 
+    '''remove image block, if None remove all image block
+    '''
+    [bpy.data.images.remove(image) for image in images]
+
+    return bpy.data.images
+
+def datablock_op_fix_image_name() -> list:
+    '''force image block name as file name
+    '''
+    images = [image for image in bpy.data.images if image.name !="Render Result"]
+    for image in images:
+        image.name = ntpath.basename(image.filepath)
+
+    images = [image for image in bpy.data.images if image.name !="Render Result"]
+    return images 
+
+def datablock_collect_materials(mode: str) -> list:
+    '''mode: "ALL/SELECTION"
+    '''
+    objects = None
+    materials = None
+
+    if mode == 'ALL':
+        materials = bpy.data.materials
+    elif mode == 'SELECTION':
+        objects = bpy.context.selected_objects
+        materials = []
+        for obj in objects:
+            material_slots = obj.material_slots
+            for slot in material_slots:
+                if slot.material not in materials:
+                    materials.append(slot.material)
+
+    return materials
+
+def datablock_collect_images(mode: str) -> list:
+    '''mode: "ALL/SELECTION"
+    '''
+    images = []
+
+    if mode == 'ALL':
+        images = [image for image in bpy.data.images if image.name !="Render Result"]
+    elif mode == 'SELECTION':
+        materials = []
+        objects = bpy.context.selected_objects
+        for obj in objects:
+            material_slots = obj.material_slots
+            for slot in material_slots:
+                if slot.material not in materials:
+                    materials.append(slot.material)
+        
+        images = []
+        for material in materials:
+            node_images = [node.image for node in material.node_tree.nodes if node.type == 'TEX_IMAGE' and node.image is not None]
+            [images.append(image) for image in node_images if image not in images]
+
+    return images
 
 def get_name_dict(obj):
     data_dict = {}
@@ -63,6 +125,7 @@ def data_rename():
             data_dict[name_target].name = data_dict[name_from].name
 
 
+
 def get_preferences():
     name = get_addon_name()
     return bpy.context.user_preferences.addons[name].preferences
@@ -95,11 +158,14 @@ def assign_pbr_maps(material):
     margin = 100
 
     base_color_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_basecolor + ext) 
+    emission_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_emission + ext) 
     matellic_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_metallic + ext) 
     specular_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_specular + ext) 
     roughness_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_roughness + ext) 
     opacity_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_opacity + ext) 
-    normal_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_normal + ext)  
+    height_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_height + ext) 
+    normal_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_normal + ext)
+    displace_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_displace + ext) 
 
     if material.use_nodes is not True:
         material.use_nodes = True
@@ -107,44 +173,67 @@ def assign_pbr_maps(material):
     mat_nodes = material.node_tree.nodes
     mat_links = material.node_tree.links
 
-    # inital shader
+    # inital shader display
     material.blend_method = "OPAQUE"
     material.show_transparent_back = False
 
+    # inital shader node tree
     mat_nodes.clear() 
     output_shader = mat_nodes.new("ShaderNodeOutputMaterial")
-    mix = mat_nodes.new("ShaderNodeMixShader")
-    mix.location = offset_node_loaction(output_shader.location, -200, 0)
-    mix.inputs[0].default_value = 1
-    glass_shader = mat_nodes.new("ShaderNodeBsdfPrincipled")
-    glass_shader.label = "Glass Shader"
-    glass_shader.location = offset_node_loaction(mix.location, -300, -20)
-    glass_shader.inputs['Base Color'].default_value = (0.2, 0.2, 0.2, 1)
-    glass_shader.inputs['Roughness'].default_value = 0.16
-    glass_shader.inputs['Transmission'].default_value = 0.9
-    glass_shader.inputs['IOR'].default_value = 1.01
-    glass_shader.inputs['Alpha'].default_value = 0.8
-    
     main_shader = mat_nodes.new("ShaderNodeBsdfPrincipled")
-    main_shader.location = offset_node_loaction(mix.location, -300, -150)
+    main_shader.location = offset_node_loaction(output_shader.location, -500, -150)
+    hide_shader_scoket(main_shader)
 
-    if mMaterialtype == 'Principle':
+    if mMaterialtype == 'Mix':
+        material.blend_method = "OPAQUE"
+        mix = mat_nodes.new("ShaderNodeMixShader")
+        mix.location = offset_node_loaction(output_shader.location, -200, 0)
+        mix.inputs[0].default_value = 1
+        glass_shader = mat_nodes.new("ShaderNodeBsdfPrincipled")
+        glass_shader.label = "Glass Shader"
+        glass_shader.location = offset_node_loaction(mix.location, -300, -20)
+        glass_shader.inputs['Base Color'].default_value = (0.2, 0.2, 0.2, 1)
+        glass_shader.inputs['Roughness'].default_value = 0.16
+        glass_shader.inputs['Transmission'].default_value = 0.9
+        glass_shader.inputs['IOR'].default_value = 1.01
+        glass_shader.inputs['Alpha'].default_value = 0.8
         mat_links.new(mix.outputs["Shader"], output_shader.inputs["Surface"])
         mat_links.new(glass_shader.outputs["BSDF"], mix.inputs[1])
         mat_links.new(main_shader.outputs["BSDF"], mix.inputs[2])
-    elif mMaterialtype == 'gltf' :
+        hide_shader_scoket(glass_shader)
+
+    elif mMaterialtype == 'Principle' :
+        material.blend_method = "CLIP"
         mat_links.new(main_shader.outputs["BSDF"], output_shader.inputs["Surface"])
 
-    # print (bpy.path.abspath(base_color_filepath))
+    if os.path.isfile(bpy.path.abspath(displace_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(displace_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = offset_node_loaction(output_shader.location, -200, -200)
+        image_node.image.colorspace_settings.name = 'Linear'
+        mat_links.new(image_node.outputs["Color"], output_shader.inputs["Displacement"])
 
     if os.path.isfile(bpy.path.abspath(base_color_filepath)):
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(base_color_filepath, check_existing=True)
         image_node.hide = True
         image_node.location = offset_node_loaction(main_shader.location, -300, -50)
-        image_node.image.colorspace_settings.name = 'sRGB'
+        filename, file_extension = os.path.splitext(base_color_filepath)
+        if file_extension == 'exr':
+            image_node.image.colorspace_settings.name = 'Linear'
+        else:
+            image_node.image.colorspace_settings.name = 'sRGB'
         mat_links.new(image_node.outputs["Color"], main_shader.inputs["Base Color"])
  
+    if os.path.isfile(bpy.path.abspath(emission_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(emission_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = offset_node_loaction(main_shader.location, -350, -330)
+        image_node.image.colorspace_settings.name = 'Linear'
+        mat_links.new(image_node.outputs["Color"], main_shader.inputs["Emission"])
+
     if os.path.isfile(bpy.path.abspath(matellic_filepath)):
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(matellic_filepath, check_existing=True)
@@ -170,70 +259,78 @@ def assign_pbr_maps(material):
         mat_links.new(image_node.outputs["Color"], main_shader.inputs["Roughness"])
 
     if os.path.isfile(bpy.path.abspath(opacity_filepath)):
-        invert_node = mat_nodes.new("ShaderNodeInvert")
-        invert_node.location = offset_node_loaction(mix.location, -300, 100)
-        invert_node.inputs['Fac'].default_value = 0
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(opacity_filepath, check_existing=True)
         image_node.hide = True
-        image_node.location = offset_node_loaction(invert_node.location, -300, -80)
         image_node.image.colorspace_settings.name = 'Linear'
 
-        
-        mat_links.new(image_node.outputs["Color"], invert_node.inputs["Color"])
-        mat_links.new(invert_node.outputs["Color"], mix.inputs[0])
-        material.blend_method = "BLEND"
+        if mMaterialtype == 'Mix':
+            invert_node = mat_nodes.new("ShaderNodeInvert")
+            invert_node.location = offset_node_loaction(mix.location, -300, 100)
+            invert_node.inputs['Fac'].default_value = 0
+            image_node.location = offset_node_loaction(invert_node.location, -300, -80)
+            mat_links.new(image_node.outputs["Color"], invert_node.inputs["Color"])
+            mat_links.new(invert_node.outputs["Color"], mix.inputs[0])
+            material.blend_method = "BLEND"
+        elif mMaterialtype == 'Principle':
+            image_node.location = offset_node_loaction(main_shader.location, -350, -450)
+            mat_links.new(image_node.outputs["Color"], main_shader.inputs['Alpha'])
+
+    bump_node = mat_nodes.new("ShaderNodeBump")
+    bump_node.inputs['Distance'].default_value = 0.1
+    bump_node.location = offset_node_loaction(main_shader.location, -550, -240)
+    mat_links.new(bump_node.outputs["Normal"], main_shader.inputs["Normal"])
+
+    if os.path.isfile(bpy.path.abspath(height_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(height_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.location = offset_node_loaction(bump_node.location, -280, -210)
+        image_node.image.colorspace_settings.name = 'Linear'
+        mat_links.new(image_node.outputs["Color"], bump_node.inputs["Height"])
 
     if os.path.isfile(bpy.path.abspath(normal_filepath)):
         image_node = mat_nodes.new("ShaderNodeTexImage")
         image_node.image = bpy.data.images.load(normal_filepath, check_existing=True)
         image_node.hide = True
         image_node.image.colorspace_settings.name = 'Linear'
-        bump = mat_nodes.new("ShaderNodeBump")
-        bump.location = (-1 * 4 * (bump.width + margin), -400)
+
         normal_map = mat_nodes.new("ShaderNodeNormalMap")
         normal_map.location = (-1 * 5 * (normal_map.width + margin), -400)
+        
+        mat_links.new(normal_map.outputs["Normal"], bump_node.inputs["Normal"])
 
-
-        if mMaterialtype == 'Principle':
-            image_node.location = (-1 * 7 * (image_node.width + margin), -400)
-            mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
-            mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
-            combin = mat_nodes.new("ShaderNodeCombineRGB")
-            combin.location = (-1 * 6 * (combin.width + margin), -400)
-            invert = mat_nodes.new("ShaderNodeInvert")
-            invert.location = (-1 * 7 *(invert.width + margin), -400)
-            sp = mat_nodes.new("ShaderNodeSeparateRGB")
-            sp.location = (-1 * 8 * (sp.width + margin), -400)
-            mat_links.new(combin.outputs["Image"], normal_map.inputs["Color"])
-            mat_links.new(sp.outputs["R"], combin.inputs["R"])
-            mat_links.new(sp.outputs["B"], combin.inputs["B"])
-            mat_links.new(sp.outputs["G"], invert.inputs["Color"])
-            mat_links.new(invert.outputs["Color"], combin.inputs["G"])
-            mat_links.new(image_node.outputs["Color"], sp.inputs["Image"])
-
-        elif mMaterialtype == 'gltf' :
-            image_node.location = (-1 * 5 * (image_node.width + margin), -400)
-            mat_links.new(bump.outputs["Normal"], main_shader.inputs["Normal"])
-            mat_links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
+        filp_normal_map = autopbr_properties.filp_normal_map
+        channel_dict = {0:'R',1:"G",2:"B"}
+        if True not in filp_normal_map:
+            image_node.location = offset_node_loaction(normal_map.location, -400, -120)
             mat_links.new(image_node.outputs["Color"], normal_map.inputs["Color"])
+        else:
+            combin_node = mat_nodes.new("ShaderNodeCombineRGB")
+            combin_node.location = offset_node_loaction(normal_map.location, -200, 0)
+            mat_links.new(combin_node.outputs["Image"], normal_map.inputs["Color"])
+            spearate_node = mat_nodes.new("ShaderNodeSeparateRGB")
+            spearate_node.location = offset_node_loaction(normal_map.location, -600, 0)
+            image_node.location = offset_node_loaction(normal_map.location, -900, 0)
+            mat_links.new(image_node.outputs["Color"], spearate_node.inputs["Image"])
+            for index in range(0, 3):
+                if filp_normal_map[index]:
+                    invert_node = mat_nodes.new("ShaderNodeInvert")
+                    invert_node.hide = True
+                    y_offset = 110*index
+                    invert_node.location = offset_node_loaction(normal_map.location, -400, 50-y_offset)
+                    invert_node.label = "Invert %s" % (channel_dict[index])
+                    mat_links.new(spearate_node.outputs[index], invert_node.inputs["Color"])
+                    mat_links.new(invert_node.outputs["Color"], combin_node.inputs[index])
+                else:
+                    mat_links.new(spearate_node.outputs[index], combin_node.inputs[index])
+                    
+    for node in material.node_tree.nodes:
+        node.select = False
 
-    hide_shader_scoket(glass_shader)
-    hide_shader_scoket(main_shader)
+    return {'FINISH'}
 #   
 
-def collect_materials(type):
-    if type == 'All':
-        materials = bpy.data.materials
-    elif type == 'Selected':
-        selectedObjects = bpy.context.selected_objects
-        materials = []
-        for object in selectedObjects:
-            material_slots = object.material_slots
-            for slot in material_slots:
-                materials.append(slot.material)
-
-    return materials
 
 
 def check_pbr_map(file_path):
