@@ -1,6 +1,12 @@
 import bpy
 from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty, IntProperty, BoolVectorProperty
 
+def update_material_keeper_index(self, context):
+    context.view_layer.objects.active = context.scene.objects['_all_material_keeper']
+    context.object.active_material_index = context.scene.AUTOPBR_properties.material_keeper_index
+
+
+
 class AUTOPBR_properties(bpy.types.PropertyGroup):
 
     filepath : StringProperty(
@@ -157,6 +163,12 @@ class AUTOPBR_properties(bpy.types.PropertyGroup):
         description="Fuzzy Search",
         default = True
     ) 
+    material_keeper_index : IntProperty(
+        description="material keeper index",
+        name = 'Index',
+        update=update_material_keeper_index,
+    )
+
 
 classes = (
     AUTOPBR_properties,

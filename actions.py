@@ -335,3 +335,37 @@ def assign_pbr_maps(material):
 
 def check_pbr_map(file_path):
     pass
+
+def create_materials_keeper():
+    activate_object = bpy.context.object
+    if bpy.data.objects.get('_all_material_keeper'):
+        material_keeper = bpy.data.objects['_all_material_keeper']
+    else:
+        bpy.ops.mesh.primitive_cube_add()
+        bpy.context.object.name = '_all_material_keeper'
+        material_keeper = bpy.data.objects['_all_material_keeper']
+    
+    if bpy.context.collection.objects.get('_all_material_keeper'):
+        pass
+    else:
+        bpy.context.collection.objects.link(material_keeper)
+        
+    material_keeper.data.materials.clear()
+    
+    for material in bpy.data.materials:
+        if not material.grease_pencil:
+            material_keeper.data.materials.append(material)
+    
+    material_keeper.select_set(False)
+    material_keeper.hide_select = True
+    material_keeper.hide_viewport = True
+    material_keeper.hide_render = True
+
+
+    
+    # bpy.context.view_layer.objects.active = activate_object
+
+def remove_materials_keeper():
+    if bpy.data.objects.get('_all_material_keeper'):
+        material_keeper = bpy.data.objects['_all_material_keeper']
+        bpy.data.objects.remove(material_keeper, do_unlink=True)

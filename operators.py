@@ -272,7 +272,23 @@ class AutoPBRMapper_OT_Actions(bpy.types.Operator):
         
         return {"FINISHED"}
 
+class AUTO_PBR_OT_create_materials_keeper(bpy.types.Operator):
+    bl_idname = "material_tools.create_materials_keeper"
+    bl_label = "Create List"
+    bl_description = "create object with all material assigned"
 
+    def execute(self, context):
+        actions.create_materials_keeper()
+        return {'FINISHED'}
+
+class AUTO_PBR_OT_remove_materials_keeper(bpy.types.Operator):
+    bl_idname = "material_tools.remove_materials_keeper"
+    bl_label = "Remove"
+    bl_description = "Remove material keeper"
+
+    def execute(self, context):
+        actions.remove_materials_keeper()
+        return {'FINISHED'}
 
 classes = (
     AUTO_PBR_OT_export_material_data,
@@ -283,6 +299,8 @@ classes = (
     MaterialTools_OT_copy_name,
     MaterialTools_OT_reset_material,
     MaterialTools_OT_convert_texture,
+    AUTO_PBR_OT_create_materials_keeper,
+    AUTO_PBR_OT_remove_materials_keeper,
 )
 
 def register():
