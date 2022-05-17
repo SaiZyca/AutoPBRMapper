@@ -166,6 +166,7 @@ def assign_pbr_maps(material):
     height_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_height + ext) 
     normal_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_normal + ext)
     displace_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_displace + ext) 
+    refraction_filepath = (tex_folder + '/' + prefix + material.name + autopbr_properties.suffix_refraction + ext) 
 
     if material.use_nodes is not True:
         material.use_nodes = True
@@ -275,6 +276,20 @@ def assign_pbr_maps(material):
         elif mMaterialtype == 'Principle':
             image_node.location = offset_node_loaction(main_shader.location, -350, -450)
             mat_links.new(image_node.outputs["Color"], main_shader.inputs['Alpha'])
+
+    if os.path.isfile(bpy.path.abspath(refraction_filepath)):
+        image_node = mat_nodes.new("ShaderNodeTexImage")
+        image_node.image = bpy.data.images.load(refraction_filepath, check_existing=True)
+        image_node.hide = True
+        image_node.image.colorspace_settings.name = 'Linear'
+
+        if mMaterialtype == 'Mix':
+            image_node.location = offset_node_loaction(glass_shader.location, -300, -80)
+            mat_links.new(image_node.outputs["Color"], glass_shader.inputs['Transmission'])
+            material.blend_method = "BLEND"
+        elif mMaterialtype == 'Principle':
+            image_node.location = offset_node_loaction(main_shader.location, -350, -450)
+            mat_links.new(image_node.outputs["Color"], main_shader.inputs['Transmission'])
 
     bump_node = mat_nodes.new("ShaderNodeBump")
     bump_node.inputs['Distance'].default_value = 0.1

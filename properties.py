@@ -54,6 +54,10 @@ class AUTOPBR_properties(bpy.types.PropertyGroup):
         default = "_Opacity",
         name = "Opacity Suffix"
     )
+    suffix_refraction: StringProperty(
+        default = "_Refraction",
+        name = "Refraction Suffix"
+    )
     filename_ext : EnumProperty(
         items = [
             ('.png','.png','*.png'),

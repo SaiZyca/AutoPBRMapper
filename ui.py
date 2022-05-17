@@ -17,7 +17,8 @@ class AUTOPBR_PT_assigner(bpy.types.Panel):
     bl_category = "AutoPBRMapper"
     bl_label = "Assign PBR Materual"
     bl_parent_id = "AUTOPBR_PT_panel"
-    # bl_options = {"DEFAULT_CLOSED"}   
+    bl_options = {"DEFAULT_CLOSED"}
+    
     def draw(self,context):
         autopbr_properties = context.scene.AUTOPBR_properties
         layout = self.layout
@@ -43,6 +44,8 @@ class AUTOPBR_PT_assigner(bpy.types.Panel):
         row.prop(autopbr_properties , "suffix_specular")
         row = layout.row(align = True)
         row.prop(autopbr_properties , "suffix_opacity") 
+        row = layout.row(align = True)
+        row.prop(autopbr_properties , "suffix_refraction") 
         row = layout.row(align = True)
         row.prop(autopbr_properties , "filename_ext", expand=True)        
         row = layout.row(align = True) 
@@ -73,7 +76,7 @@ class AUTOPBR_PT_renamer(bpy.types.Panel):
     bl_category = "AutoPBRMapper"
     bl_label = "Quick Renamer"
     bl_parent_id = "AUTOPBR_PT_panel"
-    # bl_options = {"DEFAULT_CLOSED"}   
+    bl_options = {"DEFAULT_CLOSED"}
     
     def draw(self,context):
         autopbr_properties = context.scene.AUTOPBR_properties
@@ -110,6 +113,7 @@ class AUTOPBR_PT_reassign(bpy.types.Panel):
     bl_category = "AutoPBRMapper"
     bl_label = "ReAssign Material"
     bl_parent_id = "AUTOPBR_PT_panel"
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self,context):
         autopbr_properties = context.scene.AUTOPBR_properties
@@ -131,7 +135,7 @@ class AUTOPBR_PT_texture_converter(bpy.types.Panel):
     bl_category = "AutoPBRMapper"
     bl_label = "Texture Converter"
     bl_parent_id = "AUTOPBR_PT_panel"
-    # bl_options = {"DEFAULT_CLOSED"}   
+    bl_options = {"DEFAULT_CLOSED"}
     
     def draw(self,context):
         autopbr_properties = context.scene.AUTOPBR_properties
